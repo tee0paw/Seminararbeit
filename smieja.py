@@ -21,23 +21,42 @@ for row in file:
                  int(row.split("\t")[-1].split("\n")[0])-1))
 #random.shuffle(data)
 points = np.array([item[0] for item in data])
-# delete random values in points between 0 and 25%
-number_of_deleted_values = random.randint(
-    int(len(points) / 4), int(len(points) / 4))
 
-for i in range(number_of_deleted_values):
-    position_of_array_deleted_in_array = random.randint(0, len(points) - 1)
-    position_of_value_deleted_in_array = random.randint(
+### for testing
+#points[0][0] = MISSING_VALUE
+#points[0][2] = MISSING_VALUE
+#points[3][2] = MISSING_VALUE
+
+def delete_specific_values_in_one_dimension(points, column, number_of_deleted_values):
+    for i in range(number_of_deleted_values):
+        position_of_array_deleted_in_array = random.randint(0, len(points) - 1)
+        position_of_value_deleted_in_array = column
+        points[position_of_array_deleted_in_array][position_of_value_deleted_in_array] = MISSING_VALUE
+    return points
+
+
+def delete_values_in_data(points, number_of_deleted_values):
+    for i in range(number_of_deleted_values):
+        position_of_array_deleted_in_array = random.randint(0, len(points) - 1)
+        position_of_value_deleted_in_array = random.randint(
         0, len(points[position_of_array_deleted_in_array]) - 1)
-    # points[position_of_array_deleted_in_array][position_of_value_deleted_in_array] = MISSING_VALUE
-    points[0][0] = MISSING_VALUE
-    #points[0][2] = MISSING_VALUE
-    #points[3][2] = MISSING_VALUE
+        points[position_of_array_deleted_in_array][position_of_value_deleted_in_array] = MISSING_VALUE
+    return points
 
+def delete_random_values_in_data(points):
+    number_of_deleted_values = random.randint(
+    int(len(points) / 10), int(len(points) / 3))
+    
+    for i in range(number_of_deleted_values):
+        position_of_array_deleted_in_array = random.randint(0, len(points) - 1)
+        position_of_value_deleted_in_array = random.randint(
+        0, len(points[position_of_array_deleted_in_array]) - 1)
+        points[position_of_array_deleted_in_array][position_of_value_deleted_in_array] = MISSING_VALUE
+    return points
 
-def gmm_distribution_missing_values_from_file(filename):
-    pass
-
+# delete all data rows with incomplete data from the hole dataset
+# data: numpy.array
+# returns a numpy.array only with complete data rows
 def split_data_in_completes(data):
     # select only rows with complete data and save it in completes
     completes = np.array(data)
@@ -53,6 +72,9 @@ def split_data_in_completes(data):
         row += 1
     return completes
 
+# delete all data rows with complete data from the hole dataset
+# data: numpy.array
+# returns a numpy.array only with incomplete data rows
 def split_data_in_incompletes(data):
     incompletes = np.array(data)
     row = 0
@@ -72,6 +94,10 @@ def split_data_in_incompletes(data):
         row += 1
     return incompletes
 
+# calculates the means subspace of safe dimensions in a incomplete data row
+# row: one row in a numpy.array
+# gmm_means: all means of the gmm
+# returns a numpy.array with the length of the safe dimensions and their means from the gmm
 def calculate_subspace_means_safe_dimensions(row, gmm_means):
     cluster = 0
     while cluster < CLUSTER_NUMBER:
@@ -80,6 +106,10 @@ def calculate_subspace_means_safe_dimensions(row, gmm_means):
         cluster += 1
     return subspace_means_safe_dimensions
 
+# calculates the covariances subspace of safe dimensions in a incomplete data row
+# row: one row in a numpy.array
+# gmm_covariances: all covariances of the gmm
+# returns a numpy.array with the length of the safe dimensions and their covariances from the gmm
 def calculate_subspace_covariances_safe_dimensions(row, gmm_covariances):
     cluster = 0
     while cluster < CLUSTER_NUMBER:
@@ -89,6 +119,10 @@ def calculate_subspace_covariances_safe_dimensions(row, gmm_covariances):
         cluster += 1
     return subspace_covariances_safe_dimensions
 
+# calculates the means subspace of unsafe dimensions in a incomplete data row
+# row: one row in a numpy.array
+# gmm_means: all means of the gmm
+# returns a numpy.array with the length of the unsafe dimensions and their means from the gmm
 def calculate_subspace_means_unsafe_dimensions(row, gmm_means):
     cluster = 0
     while cluster < CLUSTER_NUMBER:
@@ -98,6 +132,10 @@ def calculate_subspace_means_unsafe_dimensions(row, gmm_means):
         cluster += 1
     return subspace_means_unsafe_dimensions
 
+# calculates the covariances subspace of unsafe dimensions in a incomplete data row
+# row: one row in a numpy.array
+# gmm_covariances: all covariances of the gmm
+# returns a numpy.array with the length of the unsafe dimensions and their covariances from the gmm
 def calculate_subspace_covariances_unsafe_dimensions(row, gmm_covariances):
     cluster = 0
     while cluster < CLUSTER_NUMBER:
@@ -108,6 +146,10 @@ def calculate_subspace_covariances_unsafe_dimensions(row, gmm_covariances):
         cluster += 1
     return subspace_covariances_unsafe_dimensions
 
+# calculates the new means for the new gmm (new_means is a list of all subspace_means_unsafe_dimensions)
+# row: one row in a numpy.array
+# gmm_means: all means of the gmm
+# returns a list of numpy.arrays with the length of the safe dimensions and their means from the gmm
 def calculate_new_means(row, gmm_means):
     cluster = 0
     new_means = np.zeros((1,np.count_nonzero(row == MISSING_VALUE)))
@@ -120,6 +162,10 @@ def calculate_new_means(row, gmm_means):
     new_means = np.delete(new_means,0, axis=0)
     return new_means
 
+# calculates the new covariances for the new gmm (new_covariances is a list of all subspace_covariances_unsafe_dimensions)
+# row: one row in a numpy.array
+# gmm_covariances: all means of the gmm
+# returns a list of numpy.arrays with the length of the safe dimensions and their covariances from the gmm
 def calculate_new_covariances(row, gmm_covariances):
     cluster = 0
     new_covariances = np.zeros((1,np.count_nonzero(row == MISSING_VALUE),np.count_nonzero(row == MISSING_VALUE)))
@@ -133,6 +179,9 @@ def calculate_new_covariances(row, gmm_covariances):
     new_covariances = np.delete(new_covariances,0, axis=0)
     return new_covariances
 
+# get the values of the safe dimensions
+# row: one row in a numpy.array
+# returns numpy.array with all safe dimensions
 def get_safe_dimensions(row):
     cluster = 0
     while cluster < CLUSTER_NUMBER:
@@ -141,6 +190,11 @@ def get_safe_dimensions(row):
         cluster += 1
     return safe_dimensions
 
+# calculate c of a row
+# row: one row in a numpy.array
+# gmm_means: means of the gmm
+# covariances: covariances of the gmm
+# returns a list of all c's (for example if the gmm contains five clusters the array contains five values) 
 def calculate_c(row, gmm_means, gmm_covariances):
     cluster = 0
     c_list = np.zeros([CLUSTER_NUMBER])
@@ -161,6 +215,10 @@ def calculate_c(row, gmm_means, gmm_covariances):
     c_list = c_list[c_list != 0]
     return c_list
 
+# calculate the new weights for the gmm (r in the paper)
+# c_list: is a list with all c's (c in the paper)
+# gmm_weights: weights of the gmm
+# returns new weights for the gmm as numpy.array
 def calculate_new_weights(c_list, gmm_weights):
     multiplicated_list = [c_list*gmm_weights for c_list,gmm_weights in zip(c_list,gmm_weights)]
     sum_multiplicated_list = sum(multiplicated_list)
@@ -178,6 +236,9 @@ def calculate_new_weights(c_list, gmm_weights):
     return new_weights
 
 ### TEST
+# this is for testing the method with data for the unsafe dimensions (when x1,x3,x5 is known; y is x2,x4,x6,x7)
+# unsafe_dimensions: an numpy.array (y)
+# returns the density for all clusters as numpy.array
 def y_in_new_gmm(unsafe_dimensions,gmm_means,gmm_covariances, row, new_weights):
     cluster = 0
     new_normal_distribution_list = np.zeros([CLUSTER_NUMBER])
@@ -208,12 +269,22 @@ def y_in_new_gmm(unsafe_dimensions,gmm_means,gmm_covariances, row, new_weights):
     print(density_values)
     return density_values
 
-completes = split_data_in_completes(points)
-gmm = GaussianMixture(covariance_type="diag", n_components=CLUSTER_NUMBER).fit(
-        completes)
-
+# main function
+# points: numpy.array with missing_values
+# returns a list of tupels which has the length of all incomplete data rows (when points has 25 rows with missing values the list of the tupels has the length of 25)
+# one tupel contains the new weights, new covariances and new means for the missing dimensions
 def gmm_distribution_missing_values(points):
     means_covariances_weights_list = []
+
+    # delete random values 
+    #points = delete_random_values_in_data(points)
+
+    # delete a certain number of values
+    #points = delete_values_in_data(points, 100)
+
+    # delete values in one dimension
+    #points = delete_specific_values_in_one_dimension(points, 3, 20)
+
     completes = split_data_in_completes(points)
 
     gmm = GaussianMixture(covariance_type="diag", n_components=CLUSTER_NUMBER).fit(
